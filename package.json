@@ -1,0 +1,23 @@
+{
+  "name": "socra",
+  "version": "1.0.0",
+  "description": "software craftsmanship presentations",
+  "main": "index.js",
+  "dependencies": {
+    "spectacle": "^0.0.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chrkhl/socra.git"
+  },
+  "author": "Christian Kühl",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/chrkhl/socra/issues"
+  },
+  "homepage": "https://github.com/chrkhl/socra#readme"
+}
