@@ -389,7 +389,6 @@ Vorsicht: Nicht in Produktionscode verwenden!
 
 ---
 
-
 <br />
 ### Fall 4:
 ## Irritierende globale Dependency
@@ -558,4 +557,13 @@ Idee 2b: + Extract Interface
 <br />
 ## Idee 3:
 
-Globale Variablen/Dependencies zu eliminieren!
+Globale Variablen/Dependencies eliminieren!
+
+---
+
+<br />
+### Fall 5:
+## Schreckliche Include-Dependency
+<img src='images/kingkong.gif' />
+
+---
