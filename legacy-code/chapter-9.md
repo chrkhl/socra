@@ -1,6 +1,8 @@
 # Hilfe
 ### ich kann diese Klasse nicht testen!
 <img src='images/help.gif' />
+
+---
 <div style='font-size:50%'>
   Kapitel 9
   <br />
@@ -303,3 +305,86 @@ Lösungsansatz
   }
 ```
 Schritt 2: Extract Interface
+
+---
+
+<br />
+### Fall 3:
+## Verkettete Konstruktionen
+<img src='images/domino.gif' />
+
+---
+
+### Fall 3: Verkettete Konstruktionen
+
+Beispiel:
+
+```cs
+  public class WaterColorPane {
+    public WaterColorPane(Form border, Brush brush, Pattern backdrop) {
+      ...
+      var anteriorPanel = new Panel(border);
+      anteriorPanel.setBorderColor(brush.getForeColor());
+      var backgroundPanel = new Panel(border, backdrop);
+
+      _cursor = new FocusWidget(brush, backgroundPanel);
+      ...
+    }
+  }
+```
+
+---
+
+### Fall 3: Verkettete Konstruktionen
+
+Beispiel:
+
+```cs
+  public class WaterColorPane {
+    public WaterColorPane(Form border, Brush brush, Pattern backdrop) {
+      ...
+      var anteriorPanel = new Panel(border);
+      anteriorPanel.setBorderColor(brush.getForeColor());
+      var backgroundPanel = new Panel(border, backdrop);
+
+      _cursor = new FocusWidget(brush, backgroundPanel);
+      ...
+    }
+  }
+```
+
+Problem:
+
+Überwachung von "cursor" schwierig
+
+=> Construction Blob!
+
+---
+
+### Fall 3: Verkettete Konstruktionen
+
+Lösungsansatz:
+
+```cs
+  public class WaterColorPane {
+    public WaterColorPane(Form border, Brush brush, Pattern backdrop) {
+      ...
+      var anteriorPanel = new Panel(border);
+      anteriorPanel.setBorderColor(brush.getForeColor());
+      var backgroundPanel = new Panel(border, backdrop);
+
+      _cursor = new FocusWidget(brush, backgroundPanel);
+      ...
+    }
+
+    void supersedeCursor(FocusWidget newCursor) {
+      _cursor = newCursor;
+    }
+  }
+```
+
+Supersede Instance Variable
+
+Vorsicht: Nicht in Produktionscode verwenden!
+
+---
