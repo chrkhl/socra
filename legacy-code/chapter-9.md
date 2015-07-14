@@ -388,3 +388,174 @@ Supersede Instance Variable
 Vorsicht: Nicht in Produktionscode verwenden!
 
 ---
+
+
+<br />
+### Fall 4:
+## Irritierende globale Dependency
+<img src='images/confusion.gif' />
+
+---
+
+### Fall 4: Irritierende globale Dependency
+
+Beispiel:
+
+```cs
+  public class Facility {
+    public Facility(int facilityCode, string owner, PermitNotice notice) {
+      var permit = PermitRepo.getInstance().findPermit(notice);
+      ...
+    }
+  }
+```
+
+Anmerkung:
+
+15 weiter Klassen nutzen `.findPermit()`` auf diese Weise
+
+---
+
+### Fall 4: Irritierende globale Dependency
+
+Beispiel:
+
+```cs
+  public class Facility {
+    public Facility(int facilityCode, string owner, PermitNotice notice) {
+      var permit = PermitRepo.getInstance().findPermit(notice);
+      ...
+    }
+  }
+```
+
+Problem:
+
+"PermitRepository" ist als Singleton schwer zu überwachen!
+
+---
+
+### Fall 4: Irritierende globale Dependency
+
+Lösungsansatz:
+
+```cs
+  public class PermitRepo {
+    private static PermitRepo instance = null;
+
+    private PermitRepo() {}
+
+    public static PermitRepo getInstance() {
+      if(instance == null) {
+        instance = new PermitRepo();
+      }
+      return instance;
+    }
+    ...
+  }
+```
+
+---
+
+### Fall 4: Irritierende globale Dependency
+
+Lösungsansatz:
+
+```cs
+  public class PermitRepo {
+    private static PermitRepo instance = null;
+
+    private PermitRepo() {}
+
+    public static PermitRepo getInstance() {
+      if(instance == null) {
+        instance = new PermitRepo();
+      }
+      return instance;
+    }
+
+    public static void resetForTesting() {
+      instance = null;
+    }
+    ...
+  }
+```
+
+Idee 1: resetForTesting in "beforeEach" aufrufen
+
+=> frische Instanz für jeden Test
+
+---
+
+### Fall 4: Irritierende globale Dependency
+
+Lösungsansatz:
+
+```cs
+  public class PermitRepo {
+    private static PermitRepo instance = null;
+
+    private PermitRepo() {}
+
+    public static PermitRepo getInstance() {
+      if(instance == null) {
+        instance = new PermitRepo();
+      }
+      return instance;
+    }
+
+    public static void setTestingInstance(PermitRepo newInstance) {
+      instance = newInstance;
+    }
+    ...
+  }
+```
+<div style='font-size:80%'>
+Idee 2: Introduce Static Setter
+<br />
+=> Problem: Wie Instanz erstellen bei private ctor? public machen?
+<br />
+=> Subclass und Override mit protected ctor?
+</div>
+
+---
+
+### Fall 4: Irritierende globale Dependency
+
+Lösungsansatz:
+
+```cs
+  public class PermitRepo: IPermitRepo {
+    private static IPermitRepo instance = null;
+
+    private PermitRepo() {}
+
+    public static IPermitRepo getInstance() {
+      if(instance == null) {
+        instance = new PermitRepo();
+      }
+      return instance;
+    }
+
+    public static void setTestingInstance(IPermitRepo newInstance) {
+      instance = newInstance;
+    }
+    ...
+  }
+
+  public interface IPermitRepo {
+    Permit findPermit(PermitNotice notice);
+  }
+```
+
+Idee 2b: + Extract Interface
+
+---
+
+### Fall 4: Irritierende globale Dependency
+
+<br />
+<br />
+## Idee 3:
+
+Globale Variablen/Dependencies zu eliminieren!
