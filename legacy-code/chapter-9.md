@@ -90,25 +90,21 @@ Problem?
 
 ### Fall 1: Irritierender Parameter
 Lösungsansatz
-
-Schritt 1: Extract Interface
-
 ``` cs
   public interface IRatingSvcConnection {
-    public void Connect() {...}
-    public void Disconnect() {...}
-    public void Retry() {...}
-    public RatingReport ReportFor(int userId) {...}
+    void Connect() {...}
+    void Disconnect() {...}
+    void Retry() {...}
+    RatingReport ReportFor(int userId) {...}
   }
 ```
+Schritt 1: Extract Interface
+
 
 ---
 
 ### Fall 1: Irritierender Parameter
 Lösungsansatz
-
-Schritt 2: Fake implementieren
-
 ``` cs
   public FakeRatingServiceConnection: IRatingSvcConnection {
     public void Connect() { }
@@ -117,14 +113,12 @@ Schritt 2: Fake implementieren
     public RatingReport ReportFor(int userId) { return null; }
   }
 ```
+Schritt 2: Fake implementieren
 
 ---
 
 ### Fall 1: Irritierender Parameter
 Lösungsansatz
-
-Schritt 3: Fake im Test verwenden
-
 ``` cs
   void testNoSuccess() {
     var creditMaster = new CreditMaster();
@@ -135,6 +129,7 @@ Schritt 3: Fake im Test verwenden
     Assert.That(actual, Is.True);
   }
 ```
+Schritt 3: Fake im Test verwenden
 
 ---
 
@@ -206,3 +201,105 @@ Beispiel:
 
 # Pass Null!
 Parameter nach Bedarf ergänzen, wenn's knallt
+
+---
+
+<br />
+### Fall 2:
+## Verborgene Dependency
+<img src='images/surprised.gif' />
+
+---
+
+### Fall 2: Verborgene Dependency
+
+Beispiel:
+
+```cs
+  public class MailingListDispatcher {
+    private MailService _mailService;
+
+    public MailingListDispatcher() {
+      const int clientType = 12;
+      _mailService = new MailService();
+      _mailService.connect();
+      if(_mailService.getStatus() == MailStatus.Available) {
+        _mailService.register(this, clientType);
+        _mailService.setParam(clientType, MailParam.NoBounce);
+      }
+      ...
+    }
+  }
+```
+
+---
+
+### Fall 2: Verborgene Dependency
+
+Beispiel:
+
+```cs
+  public class MailingListDispatcher {
+    private MailService _mailService;
+
+    public MailingListDispatcher() {
+      const int clientType = 12;
+      _mailService = new MailService();
+      _mailService.connect();
+      if(_mailService.getStatus() == MailStatus.Available) {
+        _mailService.register(this, clientType);
+        _mailService.setParam(clientType, MailParam.NoBounce);
+      }
+      ...
+    }
+  }
+```
+Problem: Dependency 'MailService' schwer zugänglich
+
+---
+
+### Fall 2: Verborgene Dependency
+
+Lösungsansatz
+```cs
+  public class MailingListDispatcher {
+    private MailService _mailService;
+
+    public MailingListDispatcher(MailService mailService) {
+      const int clientType = 12;
+      _mailService = mailService;
+      _mailService.connect();
+      if(_mailService.getStatus() == MailStatus.Available) {
+        _mailService.register(this, clientType);
+        _mailService.setParam(clientType, MailParam.NoBounce);
+      }
+      ...
+    }
+  }
+```
+Schritt 1: Parameterize Constructor
+
+---
+
+### Fall 2: Verborgene Dependency
+
+Lösungsansatz
+```cs
+  public class MailingListDispatcher {
+    private MailService _mailService;
+
+    public MailingListDispatcher(IMailService mailService) {
+      const int clientType = 12;
+      _mailService = mailService;
+      ...
+    }
+  }
+
+  public interface IMailService {
+    void connect();
+    MailStatus getStatus();
+    void register(MailingListDispatcher dispatcher, int type);
+    void setParam(int type, MailParam);
+  }
+```
+Schritt 2: Extract Interface
