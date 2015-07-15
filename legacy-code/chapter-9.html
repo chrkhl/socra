@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Legacy Code - Kapitel 9</title>
+
+		<meta name="description" content="Legacy Code - Chapter 9">
+		<meta name="author" content="Christian Kühl">
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="../../css/reveal.css">
+		<link rel="stylesheet" href="../../css/theme/black.css" id="theme">
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="../../lib/css/monokai_sublime.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../../css/print/pdf.css' : '../../css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section data-background="#c0392b">
+					<h1>Hilfe</h1>
+					<h3>ich kann diese Klasse nicht testen!</h3>
+					<img src='images/help.gif' />
+					<p style="border-top:1px solid white;padding-top:10px;">
+						<small>"Effektives Arbeiten mit Legacy Code" - Michael C. Feathers</small>
+						<br />
+						<small>- Kapitel 9 -</small>
+					</p>
+				</section>
+
+				<section data-background="#c0392b">
+					<h1>Problemfelder</h1>
+					<br />
+					<ol>
+						<li class="fragment">Objekte der Klasse erstellen</li>
+						<li class="fragment">Klasse im Test-Umfeld kompilieren</li>
+						<li class="fragment">Konstruktor mit unerwünschten Nebeneffekten</li>
+						<li class="fragment">Konstruktor hat Aufgaben, die überwacht werden müssen</li>
+					</ol>
+				</section>
+
+				<section data-background="#2980b9" data-background-transition="zoom">
+					<h2>Fall 1:<br />Irritierender Parameter</h2>
+					<img class="fragment" style="width:600px" src='images/wtf.gif' />
+				</section>
+
+				<section data-background="#2980b9">
+					<small>Fall 1: Irritierender Parameter</small>
+					<br />
+					Beispiel:
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class CreditValidator {
+  CreditValidator(RatingSvcConnection cnn, CreditMaster cm) {...}
+
+  bool IsCustomerCreditWorthy(Customer customer) {...}
+}
+					</code></pre>
+					<div class="fragment">
+						<pre><code class="cs" data-trim contenteditable>
+class RatingSvcConnection {
+   RatingSvcConnection(int port, string user, string pwd) {...}
+
+   void Connect() {...}
+   void Disconnect() {...}
+   void Retry() {...}
+   RatingReport ReportFor(int userId) {...}
+}
+						</code></pre>
+					</div>
+				</section>
+
+
+				<section data-background="#2980b9">
+					<small>Fall 1: Irritierender Parameter</small>
+					<br />
+					Problem?
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class RatingSvcConnection {
+   RatingSvcConnection(int port, string user, string pwd) {...}
+
+   void Connect() {...}
+   void Disconnect() {...}
+   void Retry() {...}
+   RatingReport ReportFor(int userId) {...}
+}
+					</code></pre>
+					<ul>
+						<li class="fragment">Serverzugriff bei Testausführung?</li>
+						<li class="fragment">Langsam?</li>
+						<li class="fragment">Erreichbarkeit?</li>
+						<li class="fragment">Nebeneffekte?</li>
+					</ul>
+				</section>
+
+				<section data-background="#2980b9">
+					<small>Fall 1: Irritierender Parameter</small>
+					<br />
+					Lösungsansatz: Schritt 1 -> Extract Interface
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+interface IRatingSvcConnection {
+   void Connect() {...}
+   void Disconnect() {...}
+   void Retry() {...}
+   RatingReport ReportFor(int userId) {...}
+}
+					</code></pre>
+				</section>
+
+				<section data-background="#2980b9">
+					<small>Fall 1: Irritierender Parameter</small>
+					<br />
+					Lösungsansatz: Schritt 2 -> Fake implementieren
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class FakeRatingSvcConnection: IRatingSvcConnection {
+   void Connect() { }
+   void Disconnect() { }
+   void Retry() { }
+   RatingReport ReportFor(int userId) { return null; }
+}
+					</code></pre>
+				</section>
+
+				<section data-background="#2980b9">
+					<small>Fall 1: Irritierender Parameter</small>
+					<br />
+					Lösungsansatz: Schritt 3 -> Fake in Tests nutzen
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+void testNoSuccess() {
+   var ratingSvcConn = new FakeRatingSvcConnection();
+   var creditMaster = new CreditMaster();
+   var validator = new CreditValidator(ratingSvcConn, creditMaster);
+   var actual = validator.IsCustomerCreditWorthy(new Customer());
+   Assert.That(actual, Is.False);
+}
+					</code></pre>
+					<h1 class="fragment">CreditMaster?!</h1>
+				</section>
+
+				<section data-background="#2980b9">
+					<small>Fall 1: Irritierender Parameter</small>
+					<br />
+					Vorschlag: Pass NULL!
+					<pre><code class="cs" data-trim contenteditable>
+void testNoSuccess() {
+   var ratingSvcConn = new FakeRatingSvcConnection();
+
+   var validator = new CreditValidator(ratingSvcConn, null);
+   var actual = validator.IsCustomerCreditWorthy(new Customer());
+   Assert.That(actual, Is.False);
+}
+					</code></pre>
+					<h2 class="fragment">Parameter nach Bedarf ergänzen, wenn's knallt</h2>
+				</section>
+
+				<section data-background="#16a085" data-background-transition="zoom">
+					<h2>Fall 2:<br />Verborgene Dependency</h2>
+					<img class="fragment" src='images/surprised.gif' />
+				</section>
+
+				<section data-background="#16a085">
+					<small>Fall 2: Verborgene Dependency</small>
+					<br />
+					Beispiel:
+					<pre><code class="cs" data-trim contenteditable>
+class MailingListDispatcher {
+   private MailService _mailService;
+
+   MailingListDispatcher() {
+      const int clientType = 12;
+      _mailService = new MailService();
+      _mailService.connect();
+      if(_mailService.getStatus() == MailStatus.Available) {
+         _mailService.register(this, clientType);
+         _mailService.setParam(clientType, MailParam.NoBounce);
+      }
+      ...
+   }
+}
+					</code></pre>
+					<span class="fragment"><b><i><u>Problem:</u></i></b><br />Dependency 'MailService' in Tests schwer zugänglich</span>
+				</section>
+
+				<section data-background="#16a085">
+					<small>Fall 2: Verborgene Dependency</small>
+					<br />
+					Lösungsansatz: Schritt 1 -> Parameterize Constructor
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class MailingListDispatcher {
+   private MailService _mailService;
+
+   MailingListDispatcher(MailService mailService) {
+      const int clientType = 12;
+      _mailService = mailService
+      _mailService.connect();
+      if(_mailService.getStatus() == MailStatus.Available) {
+         _mailService.register(this, clientType);
+         _mailService.setParam(clientType, MailParam.NoBounce);
+      }
+      ...
+   }
+}
+					</code></pre>
+				</section>
+
+				<section data-background="#16a085">
+					<small>Fall 2: Verborgene Dependency</small>
+					<br />
+					Lösungsansatz: Schritt 2 -> Extract Interface
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class MailingListDispatcher {
+   private MailService _mailService;
+
+   MailingListDispatcher(IMailService mailService) {
+      const int clientType = 12;
+      _mailService = mailService;
+      ...
+   }
+}
+
+interface IMailService {
+   void connect();
+   MailStatus getStatus();
+   void register(MailingListDispatcher dispatcher, int type);
+   void setParam(int type, MailParam);
+}
+					</code></pre>
+				</section>
+
+				<section data-background="#d35400" data-background-transition="zoom">
+					<h2>Fall 3:<br />Verkettete Konstruktionen</h2>
+					<img class="fragment" style="width:600px" src='images/domino.gif' />
+				</section>
+
+				<section data-background="#d35400">
+					<small>Fall 3: Vekettete Konstruktionen</small>
+					<br />
+					Beispiel:
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class WaterColorPane {
+   WaterColorPane(Form border, Brush brush, Pattern backdrop) {
+      ...
+      var anteriorPanel = new Panel(border);
+      anteriorPanel.setBorderColor(brush.getForeColor());
+      var backgroundPanel = new Panel(border, backdrop);
+
+      _cursor = new FocusWidget(brush, backgroundPanel);
+      ...
+   }
+}
+					</code></pre>
+					<span class="fragment"><b><i><u>Problem:</u></i></b><br />Überwachung von "cursor" schwierig</span>
+					<h3 class="fragment">=> Construction Blob</h3>
+				</section>
+
+				<section data-background="#d35400">
+					<small>Fall 3: Vekettete Konstruktionen</small>
+					<br />
+					Lösungsansatz: cursor in Tests von außen setzen
+					<pre><code class="cs" data-trim contenteditable>
+class WaterColorPane {
+   WaterColorPane(Form border, Brush brush, Pattern backdrop) {
+      ...
+      var anteriorPanel = new Panel(border);
+      anteriorPanel.setBorderColor(brush.getForeColor());
+      var backgroundPanel = new Panel(border, backdrop);
+
+      _cursor = new FocusWidget(brush, backgroundPanel);
+      ...
+   }
+
+   void supersedeCursor(FocusWidget newCursor) {
+      _cursor = newCursor;
+   }
+}
+					</code></pre>
+					<span class="fragment"><b><i><u>Vorsicht:</u></i></b><br />Nicht in Produktionscode nutzen!</span>
+				</section>
+
+				<section data-background="#2c3e50" data-background-transition="zoom">
+					<h2>Fall 4:<br />Irritierende globale Dependency</h2>
+					<img class="fragment" style="width:600px" src='images/confusion.gif' />
+				</section>
+
+				<section data-background="#d35400">
+					<small>Fall 4: Irritierende globale Dependency</small>
+					<br />
+					Beispiel:
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class Facility {
+   Facility(int facilityCode, string owner, PermitNotice notice) {
+      var permit = PermitRepo.getInstance().findPermit(notice);
+         ...
+      }
+}
+					</code></pre>
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class PermitRepo {
+   private static PermitRepo instance = null;
+   private PermitRepo() {}
+
+   static PermitRepo getInstance() {
+      if(instance == null) instance = new PermitRepo();
+      return instance;
+   }
+
+   ...
+}
+					</code></pre>
+					<span class="fragment"><b><i><u>Problem:</u></i></b> Singleton erschwert Tests!</span>
+				</section>
+
+				<section data-background="#d35400">
+					<small>Fall 4: Irritierende globale Dependency</small>
+					<br />
+					Lösungsidee 1: frische Instanz für jeden Test
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class PermitRepo {
+   private static PermitRepo instance = null;
+   private PermitRepo() {}
+
+   static PermitRepo getInstance() {
+      if(instance == null) instance = new PermitRepo();
+      return instance;
+   }
+
+   static void resetForTesting() {
+      instance = null;
+   }
+   ...
+}
+					</code></pre>
+					<span class="fragment">"resetForTesting" in "beforeEach" aufrufen</span>
+				</section>
+
+				<section data-background="#d35400">
+					<small>Fall 4: Irritierende globale Dependency</small>
+					<br />
+					Lösungsidee 2: Introduce Static Setter
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class PermitRepo {
+   private static PermitRepo instance = null;
+   private PermitRepo() {}
+
+   static PermitRepo getInstance() {
+      if(instance == null) instance = new PermitRepo();
+      return instance;
+   }
+
+   static void setTestingInstance(PermitRepo newInstance) {
+      instance = newInstance;
+   }
+   ...
+}
+					</code></pre>
+					<span class="fragment"><b><i><u>Problem:</u></i></b><br />Wie Instanz erstellen mit private ctor? public machen?</span>
+				</section>
+
+				<section data-background="#d35400">
+					<small>Fall 4: Irritierende globale Dependency</small>
+					<br />
+					Lösungsidee 2b: + Extract Interface
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+interface IPermitRepo {
+   Permit findPermit(PermitNotice notice);
+}
+
+class PermitRepo: IPermitRepo {
+   private static IPermitRepo instance = null;
+   private PermitRepo() {}
+
+   static IPermitRepo getInstance() {
+      if(instance == null) instance = new PermitRepo();
+      return instance;
+   }
+
+   static void setTestingInstance(IPermitRepo newInstance) {
+      instance = newInstance;
+   }
+   ...
+}
+					</code></pre>
+				</section>
+
+				<section data-background="#d35400">
+					<small>Fall 4: Irritierende globale Dependency</small>
+					<br />
+					Lösungsidee 3:
+					<br />
+					<br />
+					<h2 class="fragment">Globale Variable/Dependencies</h2>
+					<div class="fragment">
+						<img src="images/shotgun.gif" />
+						<h1>eliminieren!<h1>
+					</div>
+				</section>
+
+				<section data-background="#27ae60" data-background-transition="zoom">
+					<h2>Fall 5:<br />Schreckliche Include-Dependency</h2>
+					<img class="fragment" style="width:600px" src='images/evil.gif' />
+				</section>
+			</div>
+		</div>
+
+		<script src="../../lib/js/head.min.js"></script>
+		<script src="../../js/reveal.js"></script>
+
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: false,
+				slideNumber: true,
+
+				transition: 'fade', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: '../../lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: '../../plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../../plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../../plugin/highlight/highlight.js', async: true, condition: function() { return !!document.querySelector( 'pre code' ); }, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: '../../plugin/zoom-js/zoom.js', async: true },
+					{ src: '../../plugin/notes/notes.js', async: true }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>

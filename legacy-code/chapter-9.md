@@ -256,7 +256,7 @@ Beispiel:
     }
   }
 ```
-Problem: Dependency 'MailService' schwer zugänglich
+Problem: Dependency 'MailService' in Tests schwer zugänglich
 
 ---
 
