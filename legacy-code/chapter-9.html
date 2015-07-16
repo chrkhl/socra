@@ -425,11 +425,39 @@ class PermitRepo: IPermitRepo {
 				</section>
 
 				<section data-background="#27ae60" data-background-transition="zoom">
-					<h2>Fall 5:<br />Schreckliche Include-Dependency</h2>
-					<img class="fragment" style="width:600px" src='images/kingkong.gif' />
+					<h2>Fall 6:<br />Der Zwiebel-Parameter</h2>
+					<img class="fragment" style="width:600px" src='images/onion.gif' />
 				</section>
-			</div>
+
+				<section data-background="#27ae60">
+					<small>Fall 6: Der Zwiebel-Parameter</small>
+					<br />
+					Beispiel:
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class SchedulingTaskPane: SchedulerPane {
+   SchedulingTaskPane(SchedulingTask task) { ... }
+}
+					</code></pre>
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class SchedulingTask: SerialTask {
+   SchedulingTask(Scheduler scheduler, MeetingResolver resolver) { ... }
+}
+					</code></pre>
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class Scheduler {
+   Scheduler(BookingService service) { ... }
+}
+					</code></pre>
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class BookingService {
+   BookingService(Calendar calendar, RoomService roomService) { ... }
+}
+					</code></pre>
+					<span class="fragment"><b><i><u>Problem:</u></i></b><br />Kette abhängiger Objekte</span>
+				</section>
+
 		</div>
+	</div>
 
 		<script src="../../lib/js/head.min.js"></script>
 		<script src="../../js/reveal.js"></script>
