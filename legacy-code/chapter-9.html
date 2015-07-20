@@ -274,6 +274,7 @@ interface IMailService {
 					Beispiel:
 					<pre class="fragment"><code class="cs" data-trim contenteditable>
 class WaterColorPane {
+   private FocusWidget _cursor;
    WaterColorPane(Form border, Brush brush, Pattern backdrop) {
       ...
       var anteriorPanel = new Panel(border);
@@ -295,6 +296,7 @@ class WaterColorPane {
 					Lösungsansatz: <i>cursor</i> in Tests von außen setzen
 					<pre><code class="cs" data-trim contenteditable>
 class WaterColorPane {
+   private FocusWidget _cursor;
    WaterColorPane(Form border, Brush brush, Pattern backdrop) {
       ...
       var anteriorPanel = new Panel(border);
@@ -507,7 +509,7 @@ class SerialTask {
 }
 					</code></pre>
 					<pre class="fragment"><code class="cs" data-trim contenteditable>
-class ISchedulingTask {
+interface ISchedulingTask {
    void run();
 }
 					</code></pre>
