@@ -15,7 +15,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
 
 		<link rel="stylesheet" href="../../css/reveal.css">
-		<link rel="stylesheet" href="../../css/theme/black.css" id="theme">
+		<link rel="stylesheet" href="../../css/theme/blood.css" id="theme">
 
 		<!-- Code syntax highlighting -->
 		<link rel="stylesheet" href="../../lib/css/monokai_sublime.css">
@@ -28,6 +28,13 @@
 			link.href = window.location.search.match( /print-pdf/gi ) ? '../../css/print/pdf.css' : '../../css/print/paper.css';
 			document.getElementsByTagName( 'head' )[0].appendChild( link );
 		</script>
+
+		<style>
+			table.centeredTable, table.centeredTable td {
+				border:none;
+				text-align:center;
+			}
+		</style>
 
 		<!--[if lt IE 9]>
 		<script src="lib/js/html5shiv.js"></script>
@@ -163,7 +170,7 @@ void testNoSuccess() {
    Assert.That(actual, Is.False);
 }
 					</code></pre>
-					<h1 class="fragment">CreditMaster?!</h1>
+					<h3 class="fragment">CreditMaster?!</h3>
 				</section>
 
 				<section data-background="#2980b9">
@@ -179,7 +186,7 @@ void testNoSuccess() {
    Assert.That(actual, Is.False);
 }
 					</code></pre>
-					<h2 class="fragment">Parameter nach Bedarf ergänzen, wenn's knallt</h2>
+					<h3 class="fragment">Parameter nach Bedarf ergänzen, wenn's knallt</h3>
 				</section>
 
 				<section data-background="#16a085" data-background-transition="zoom">
@@ -279,7 +286,7 @@ class WaterColorPane {
 }
 					</code></pre>
 					<span class="fragment"><b><i><u>Problem:</u></i></b><br />Überwachung von <i>cursor</i> schwierig</span>
-					<h3 class="fragment">=> Construction Blob</h3>
+					<h3 class="fragment">⇨ Construction Blob</h3>
 				</section>
 
 				<section data-background="#d35400">
@@ -311,7 +318,7 @@ class WaterColorPane {
 					<img class="fragment" style="width:400px" src='images/confusion.gif' />
 				</section>
 
-				<section data-background="#d35400">
+				<section data-background="#2c3e50">
 					<small>Fall 4: Irritierende globale Dependency</small>
 					<br />
 					Beispiel:
@@ -339,7 +346,7 @@ class PermitRepo {
 					<span class="fragment"><b><i><u>Problem:</u></i></b> Singleton erschwert Tests!</span>
 				</section>
 
-				<section data-background="#d35400">
+				<section data-background="#2c3e50">
 					<small>Fall 4: Irritierende globale Dependency</small>
 					<br />
 					Lösungsidee 1: frische Instanz für jeden Test
@@ -362,7 +369,7 @@ class PermitRepo {
 					<span class="fragment"><i>resetForTesting</i> in <i>beforeEach</i> aufrufen</span>
 				</section>
 
-				<section data-background="#d35400">
+				<section data-background="#2c3e50">
 					<small>Fall 4: Irritierende globale Dependency</small>
 					<br />
 					Lösungsidee 2: Introduce Static Setter
@@ -385,7 +392,7 @@ class PermitRepo {
 					<span class="fragment"><b><i><u>Problem:</u></i></b><br />Wie Instanz erstellen mit private ctor? public machen?</span>
 				</section>
 
-				<section data-background="#d35400">
+				<section data-background="#2c3e50">
 					<small>Fall 4: Irritierende globale Dependency</small>
 					<br />
 					Lösungsidee 2b: + Extract Interface
@@ -411,16 +418,16 @@ class PermitRepo: IPermitRepo {
 					</code></pre>
 				</section>
 
-				<section data-background="#d35400">
+				<section data-background="#2c3e50">
 					<small>Fall 4: Irritierende globale Dependency</small>
 					<br />
 					Lösungsidee 3:
 					<br />
 					<br />
-					<h2 class="fragment">Globale Variable/Dependencies</h2>
+					<h3 class="fragment">Globale Variablen/Dependencies</h3>
 					<div class="fragment">
 						<img src="images/shotgun.gif" />
-						<h1>eliminieren!<h1>
+						<h3>eliminieren!<h3>
 					</div>
 				</section>
 
@@ -520,6 +527,125 @@ class SchedulingTaskPane: SchedulerPane {
 }
 					</code></pre>
 				</section>
+
+				<section data-background="#e67e22" data-background-transition="zoom">
+					<h2>Fall 7:<br />Der Alias-Parameter</h2>
+					<img class="fragment" src='images/costume.gif' />
+				</section>
+
+				<section data-background="#e67e22">
+					<small>Fall 7: Der Alias-Parameter</small>
+					<pre><code class="cs" data-trim contenteditable>
+class IndustrialFacility: Facility {
+   Permit _basePermit;
+   IndustrialFacility(OriginationPermit permit) {
+      Permit associatedPermit = PermitRepo
+         .getAssociatedFromOriginatin(permit);
+
+      if(associatedPermit.isValid()) {
+         _basePermit = associatedPermit;
+      }
+      else if(!permit.isValid()) {
+         permit.validate();
+         _basePermit = permit;
+      }
+      else {
+         throw new PermitViolation(permit);
+      }
+   }
+}
+					</code></pre>
+					<span class="fragment">
+						<b><i><u>Problem:</u></i></b>
+						<br />
+						<i>OriginationPermit</i> hat schreckliche Dependencies
+						<br />
+						<span class="fragment"><i>OriginationPermit</i></span>
+						<span class="fragment">⇦ <i>FacilityPermit</i></span>
+						<span class="fragment">⇦ <i>Permit</i></span>
+					</span>
+				</section>
+
+				<section data-background="#e67e22">
+					<small>Fall 7: Der Alias-Parameter</small>
+					<br />
+					<div class="fragment">
+						<b><i><u>Idee:</u></i></b> Extract Interface
+						<br />
+						<br />
+						<div style="display:inline-block;width:40%;" class="fragment">
+							OriginationPermit
+							<br />
+							⇧<br />
+							FacilityPermit
+							<br />
+							⇧<br />
+							Permit
+						</div>
+						<div style="display:inline-block;width:40%" class="fragment">
+							IOriginationPermit
+							<br />
+							⇧<br />
+							IFacilityPermit
+							<br />
+							⇧<br />
+							IPermit
+						</div>
+					</div>
+					<img src="images/baby.gif" class="fragment" />
+				</section>
+
+				<section data-background="#e67e22">
+					<small>Fall 7: Der Alias-Parameter</small>
+					<br />
+					<b><i><u>Zeiter Blick:<br />
+					</u></i></b>Warum ist <i>OriginationPermit schrecklich?</i>
+					<pre><code class="cs" data-trim contenteditable>
+class OriginationPermit: FacilityPermit
+   ...
+   void Validate() {
+      // Verbindung zur DB aufbauen
+      ...
+
+      // Validierungs-Flag setzen
+      becomeValid();
+
+      // Datenbankverbindung schließen
+      ...
+   }
+}
+					</code></pre>
+					<span class="fragment">
+						<b><i><u>Problem:</u></i></b>
+						<br />
+						Datenbankzugriff!
+					</span>
+				</section>
+
+				<section data-background="#e67e22">
+					<small>Fall 7: Der Alias-Parameter</small>
+					<br />
+					<b><i><u>Lösungsansatz:<br />
+					</u></i></b>Subclass and Override Method</i>
+					<pre><code class="cs" data-trim contenteditable>
+class AlwaysValidPermit: OriginationPermit {
+   override void Validate() {
+      base.becomeValid();
+   }
+}
+					</code></pre>
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+public void testHasPermits() {
+   var permit = new AlwaysValidPermit();
+   var facility = new IndustrialFacility(permit);
+   Assert.That(facility.HasPermits(), Is.True);
+}
+					</code></pre>
+				</section>
+
+				<section data-background="images/end.gif" data-background-transition="zoom">
+					<img class="fragment" style="border:none;" src='images/end.gif' />
+				</section>
 		</div>
 	</div>
 
@@ -536,7 +662,7 @@ class SchedulingTaskPane: SchedulerPane {
 				history: true,
 				center: false,
 				slideNumber: true,
-
+				width:1280,
 				transition: 'fade', // none/fade/slide/convex/concave/zoom
 
 				// Optional reveal.js plugins
