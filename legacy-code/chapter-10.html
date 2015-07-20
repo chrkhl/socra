@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Legacy Code - Kapitel 10</title>
+
+		<meta name="description" content="Legacy Code - Chapter 9">
+		<meta name="author" content="Christian Kühl">
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="../../css/reveal.css">
+		<link rel="stylesheet" href="../../css/theme/blood.css" id="theme">
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="../../lib/css/monokai_sublime.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../../css/print/pdf.css' : '../../css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<style>
+			table.centeredTable, table.centeredTable td {
+				border:none;
+				text-align:center;
+			}
+		</style>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section data-background="#8e44ad">
+						<br />
+						<blockquote style="width:100%;font-size:160%;">"Effektives Arbeiten mit Legacy Code"</blockquote>
+						<small>- Michael C. Feathers -</small>
+						<br />
+						<br />
+						<h1>- Kapitel 10 -</h1>
+					</p>
+				</section>
+
+				<section data-background="#9b59b6">
+					<h1>Thema:</h1>
+					<div class="fragment">
+						<blockquote style="width:100%"><span style="font-size:200%">"Hilfe,</span> ich kann diese Methode nicht testen!"</blockquote>
+						<img src='images/help2.gif' />
+					</div>
+				</section>
+
+				<section data-background="#d35400">
+					<h1>Problemfelder</h1>
+					<br />
+					<ol>
+						<li class="fragment">Methode nicht zugänglich (z.B. private)</li>
+						<li class="fragment">Aufruf schwierig weil Parameter schwierig zu konstruieren</li>
+						<li class="fragment">Methode hat unerwünschte Nebeneffekte (z.B. DB-Zugriff)</li>
+					</ol>
+				</section>
+
+				<section data-background="#2980b9" data-background-transition="zoom">
+					<h2>Fall 1:<br />Die verborgene Methode</h2>
+					<img class="fragment" style="width:600px" src='images/hidden.gif' />
+				</section>
+
+				<section data-background="#2980b9">
+					<small>Fall 1: Die verborgene Methode</small>
+					<br />
+					Problem:<br />Methode ist privat
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class Image {
+   private void setSnapRegion(int x, int y, int width, int height) { ... }
+
+   public void Snap() { ... }
+
+   ...
+}
+					</code></pre>
+				</section>
+
+				<section data-background="#2980b9">
+					<small>Fall 1: Die verborgene Methode</small>
+					<br />
+					Lösungsideen:
+					<br />
+					<br />
+					<ul>
+						<li class="fragment">Umweg: öffentliche Methode => Aufwand?</li>
+						<li class="fragment">
+							Methode öffentlich machen => Sorgen?
+							<div class="fragment">
+								<ul>
+									<li>Methode wird nicht von außen benötigt</li>
+									<li class="fragment">Aufrufe von außen können Nebeneffekte haben</li>
+								</ul>
+							</div>
+						</li>
+					</ul>
+					<br /><br />
+					<h2 class="fragment">Merke:</h2>
+					<span class="fragment">Gutes Design ist testbar!</span>
+				</section>
+
+				<section data-background="#2980b9">
+					<small>Fall 1: Die verborgene Methode</small>
+					<br />
+					Lösungsansatz:
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+// 1. Methodenzugriff von private zu protected ändern
+class Image {
+   protected void setSnapRegion(int x, int y, int width, int height) { ... }
+
+   public void Snap() { ... }
+}
+					</code></pre>
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+// 2. Subclass erstellen
+class TestingImage: Image {
+   protected void setSnapRegion(int x, int y, int width, int height) {
+      base.setSnapRegion(x, y, width, height);
+   }
+}
+					</code></pre>
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+// 3. private Methode über Subclass testen
+public void TestSetSnapRegion() {
+   var image = new TestingImage();
+   image.setSnapRegion(0, 0, 800, 600);
+   Assert.That(image.width, Is.Equal.To(800));
+}
+					</code></pre>
+				</section>
+
+				<section data-background="#c0392b" data-background-transition="zoom">
+					<h2>Fall 2:<br />Die &quot;hilfreiche&quot; Sprachfunktion</h2>
+					<img class="fragment" style="width:400px;" src='images/useless.gif' />
+				</section>
+
+				<section data-background="#c0392b">
+					<small>Fall 2: Die &quot;hilfreiche&quot; Sprachfunktion</small>
+					<br />
+					Beispiel:
+					<pre><code class="cs" data-trim contenteditable>
+public void List&lt;Stream&gt; getKsrStreams(HttpFileCollection files) {
+   var list = new List&lt;Stream&gt;();
+   foreach(var name in files) {
+      var file = files[name];
+      if(file.FileName.EndsWith(".ksr") && file.ContentLength < MAX_LEN) {
+         // read file and do some fancy stuff
+         list.Add(file.InputStream);
+      }
+   }
+   return list;
+}
+					</code></pre>
+					<span class="fragment"><b><i><u>Problem:</u></i></b><br /><i>HttpPostedFile</i> und <i>HttpFileCollection</i> haben keine öffentlichen Konstruktoren und keine Methoden um Subclasses zu erstellen.
+					</span>
+				</section>
+
+				<section data-background="#c0392b">
+					<small>Fall 2: Die &quot;hilfreiche&quot; Sprachfunktion</small>
+					<br />
+					Lösungsansatz: Schritt 1<br />-> Superclass von HttpFileCollection ableiten
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+public class OurHttpFileCollection: NameObjectCollectionBase {
+   ...
+}
+
+public void List&lt;Stream&gt; getKsrStreams(OurHttpFileCollection files) {
+   var list = new List&lt;Stream&gt;();
+   foreach(var name in files) {
+      var file = files[name];
+      if(file.FileName.EndsWith(".ksr") && file.ContentLength < MAX_LEN) {
+         // read file and do some fancy stuff
+         list.Add(file.InputStream);
+      }
+   }
+   return list;
+}
+					</code></pre>
+				</section>
+
+				<section data-background="#c0392b">
+					<small>Fall 2: Die &quot;hilfreiche&quot; Sprachfunktion</small>
+					<br />
+					Lösungsansatz: Schritt 2 -> Skin and Wrap the API
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+// Skin: Extract Interface
+public interface IHttpPostedFile {
+   int ContentLength { get; }
+   string FileName { get; }
+}
+					</code></pre>
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+// Wrap: Implement Wrapper
+public class HttpPostedFileWrapper: IPostedFile {
+   public HttpPostedFile(HttpPostedFile file) {
+      this.file = file;
+   }
+   public int ContentLength {
+      get { return this.file.ContentLength; }
+   }
+   ...
+}
+					</code></pre>
+				</section>
+
+				<section data-background="#c0392b">
+					<small>Fall 2: Die &quot;hilfreiche&quot; Sprachfunktion</small>
+					<br />
+					Lösungsansatz: Test & Production
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+// Test-Implementation
+public class FakeHttpPostedFile: IHttpPostedFile {
+   public FakeHttpPostedFile(int length, Stream stream, ...) { ... }
+
+   public int ContentLength {
+      get { return this.length; }
+   }
+}
+					</code></pre>
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+// Fix production code
+public void List&lt;Stream&gt; getKsrStreams(OurHttpFileCollection files) {
+   var list = new List&lt;Stream&gt;();
+   foreach(var name in files) {
+      IHttpPostedFile file = files[name];
+      if(file.FileName.EndsWith(".ksr") && file.ContentLength < MAX_LEN) {
+         // read file and do some fancy stuff
+         list.Add(file.InputStream);
+      }
+   }
+   return list;
+}
+					</code></pre>
+				</section>
+
+				<section data-background="#27ae60" data-background-transition="zoom">
+					<h2>Fall 3:<br />Nicht erkennbarer Nebeneffekt</h2>
+					<img class="fragment" style="width:600px" src='images/sideeffect.gif' />
+				</section>
+
+				<section data-background="#27ae60">
+					<small>Fall 3: Nicht erkennbarer Nebeneffekt</small>
+					<br />
+					Beispiel:
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class AccountDetailFrame: Frame {
+   private TextBox display = new TextBox(...);
+
+   public void actionPerformed(ActionEvent event) {
+      var source = (string)event.getActionCommand();
+      if(source.equal("project activity")) {
+         var detailDisplay = new DetailFrame();
+         detailDisplay.setDescription(getDetailText() + " " + getProjectionText());
+         detailDisplay.show();
+         var accountDescription = detailDisplay.getAccountSymbol();
+         accountDescription += ": ";
+         display.setText(accountDescription);
+         ...
+      }
+   }
+}
+					</code></pre>
+					<span class="fragment"><b><i><u>Problem:</u></i></b><br />Methode macht alles! (GUI, Berechnung, ...)</span>
+				</section>
+
+				<section data-background="#27ae60">
+					<small>Fall 3: Nicht erkennbarer Nebeneffekt</small>
+					<br />
+					Lösungsansatz: Schritt 1 -> <i>ActionEvent</i> isolieren
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class AccountDetailFrame: Frame {
+   private TextBox display = new TextBox(...);
+
+   public void actionPerformed(ActionEvent event) {
+      var source = (string)event.getActionCommand();
+      performCommand(source);
+   }
+   public void performCommand(String source) {
+      if(source.equal("project activity")) {
+         var detailDisplay = new DetailFrame();
+         detailDisplay.setDescription(getDetailText() + " " + getProjectionText());
+         detailDisplay.show();
+         var accountDescription = detailDisplay.getAccountSymbol();
+         accountDescription += ": ";
+         display.setText(accountDescription);
+         ...
+      }
+   }
+}
+					</code></pre>
+				</section>
+
+				<section data-background="#27ae60">
+					<small>Fall 3: Nicht erkennbarer Nebeneffekt</small>
+					<br />
+					Lösungsansatz: Schritt 2 -> Frame <i>detailDisplay</i> isolieren
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class AccountDetailFrame: Frame {
+   private TextBox display = new TextBox(...);
+   private DetailFrame detailDisplay;
+
+   public void actionPerformed(ActionEvent event) { ... }
+
+   public void performCommand(String source) {
+      if(source.equal("project activity")) {
+         this.detailDisplay = new DetailFrame();
+         this.detailDisplay.setDescription(getDetailText() + " " + getProjectionText());
+         this.detailDisplay.show();
+         var accountDescription = this.detailDisplay.getAccountSymbol();
+         accountDescription += ": ";
+         display.setText(accountDescription);
+         ...
+      }
+   }
+}
+					</code></pre>
+				</section>
+
+				<section data-background="#27ae60">
+					<small>Fall 3: Nicht erkennbarer Nebeneffekt</small>
+					<br />
+					Lösungsansatz: Schritt 3 -> UI-Zugriffe weiter extrahieren
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class AccountDetailFrame: Frame {
+   ...
+
+   public void performCommand(String source) {
+      if(source.equal("project activity")) {
+         setDescription(getDetailText() + " " + getProjectionText());
+         ...
+         var accountDescription = getAccountSymbol();
+         accountDescription += ": ";
+         setDisplayText(accountDescription);
+         ...
+      }
+   }
+   void setDescription(string description) {
+      this.detailDisplay = new DetailFrame();
+      this.detailDisplay.setDescription(description);
+      this.detailDisplay.show();
+   }
+   string getAccountSymbol() {
+      return this.detailDisplay.getAccountSymbol();
+   }
+   void setDisplayText(string description) {
+      display.setText(accountDescription);
+   }
+}
+					</code></pre>
+				</section>
+
+				<section data-background="#27ae60">
+					<small>Fall 3: Nicht erkennbarer Nebeneffekt</small>
+					<br />
+					Lösungsansatz: Schritt 4 -> Subclass and Override Method
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+public class TestingAccountDetailFrame: AccountDetailFrame {
+   string displayText = "";
+   string accountSymbol = "";
+
+   override void setDescription(string description) { }
+
+   override string getAccountSymbol() {
+      return this.accountSymbol;
+   }
+
+   override void setDisplayText(string text) {
+      this.displayText = text;
+   }
+}
+					</code></pre>
+				</section>
+
+				<section data-background="#27ae60">
+					<small>Fall 3: Nicht erkennbarer Nebeneffekt</small>
+					<br />
+					Lösungsansatz: Schritt 5 -> <i>performCommand</i>-Methode testen
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+public void testPerformCommand() {
+   var accountDetailFrame = new TestingAccountDetailFrame();
+   frame.accountSymbol = "SYM";
+   frame.performCommand("project activity");
+   Assert.That(frame.displayText, Is.Equal.To("SYM: basic account"));
+}
+					</code></pre>
+				</section>
+
+				<section data-background="images/end.gif" data-background-transition="zoom">
+				</section>
+		</div>
+	</div>
+
+		<script src="../../lib/js/head.min.js"></script>
+		<script src="../../js/reveal.js"></script>
+
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: false,
+				slideNumber: true,
+				width:1280,
+				transition: 'fade', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: '../../lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: '../../plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../../plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: '../../plugin/highlight/highlight.js', async: true, condition: function() { return !!document.querySelector( 'pre code' ); }, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: '../../plugin/zoom-js/zoom.js', async: true },
+					{ src: '../../plugin/notes/notes.js', async: true }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
