@@ -207,7 +207,7 @@ class MailingListDispatcher {
    }
 }
 					</code></pre>
-					<span class="fragment"><b><i><u>Problem:</u></i></b><br />Dependency 'MailService' in Tests schwer zugänglich</span>
+					<span class="fragment"><b><i><u>Problem:</u></i></b><br />Dependency <i>MailService</i> in Tests schwer zugänglich</span>
 				</section>
 
 				<section data-background="#16a085">
@@ -278,14 +278,14 @@ class WaterColorPane {
    }
 }
 					</code></pre>
-					<span class="fragment"><b><i><u>Problem:</u></i></b><br />Überwachung von "cursor" schwierig</span>
+					<span class="fragment"><b><i><u>Problem:</u></i></b><br />Überwachung von <i>cursor</i> schwierig</span>
 					<h3 class="fragment">=> Construction Blob</h3>
 				</section>
 
 				<section data-background="#d35400">
 					<small>Fall 3: Vekettete Konstruktionen</small>
 					<br />
-					Lösungsansatz: cursor in Tests von außen setzen
+					Lösungsansatz: <i>cursor</i> in Tests von außen setzen
 					<pre><code class="cs" data-trim contenteditable>
 class WaterColorPane {
    WaterColorPane(Form border, Brush brush, Pattern backdrop) {
@@ -359,7 +359,7 @@ class PermitRepo {
    ...
 }
 					</code></pre>
-					<span class="fragment">"resetForTesting" in "beforeEach" aufrufen</span>
+					<span class="fragment"><i>resetForTesting</i> in <i>beforeEach</i> aufrufen</span>
 				</section>
 
 				<section data-background="#d35400">
@@ -432,8 +432,8 @@ class PermitRepo: IPermitRepo {
 				<section data-background="#27ae60">
 					<small>Fall 6: Der Zwiebel-Parameter</small>
 					<br />
-					Beispiel:
-					<pre class="fragment"><code class="cs" data-trim contenteditable>
+					Beispiel: <i>SchedulingTaskPane</i> soll getestet werden
+					<pre><code class="cs" data-trim contenteditable>
 class SchedulingTaskPane: SchedulerPane {
    SchedulingTaskPane(SchedulingTask task) { ... }
 }
@@ -441,6 +441,7 @@ class SchedulingTaskPane: SchedulerPane {
 					<pre class="fragment"><code class="cs" data-trim contenteditable>
 class SchedulingTask: SerialTask {
    SchedulingTask(Scheduler scheduler, MeetingResolver resolver) { ... }
+   void run() { ... }
 }
 					</code></pre>
 					<pre class="fragment"><code class="cs" data-trim contenteditable>
@@ -453,9 +454,72 @@ class BookingService {
    BookingService(Calendar calendar, RoomService roomService) { ... }
 }
 					</code></pre>
-					<span class="fragment"><b><i><u>Problem:</u></i></b><br />Kette abhängiger Objekte</span>
+					<span class="fragment">
+						<b><i><u>Problem:</u></i></b>
+						<br />
+						Kette abhängiger Objekte
+					</span>
 				</section>
 
+				<section data-background="#27ae60">
+					<small>Fall 6: Der Zwiebel-Parameter</small>
+					<br />
+					<i>SchedulingTask</i> ist "dringendste" Dependency
+					<pre><code class="cs" data-trim contenteditable>
+class SchedulingTaskPane: SchedulerPane {
+   SchedulingTaskPane(SchedulingTask task) { ... }
+}
+					</code></pre>
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class SchedulingTask: SerialTask {
+   SchedulingTask(Scheduler scheduler, MeetingResolver resolver) { ... }
+   void run() { ... }
+}
+					</code></pre>
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class SerialTask {
+   void run() { ... }
+   void suspend() { ... }
+   void stop() { ... }
+}
+					</code></pre>
+					<span class="fragment">
+						<b><i><u>Problem:</u></i></b>
+						<br />
+						<i>SchedulingTask</i> überschreibt nicht alle öffentlichen Methoden von <i>SerialTask</i>
+					</span>
+				</section>
+
+				<section data-background="#27ae60">
+					<small>Fall 6: Der Zwiebel-Parameter</small>
+					<br />
+					Lösungsansatz:
+					<pre><code class="cs" data-trim contenteditable>
+class SerialTask {
+   virtual void run(){ ... };
+}
+					</code></pre>
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class ISchedulingTask {
+   void run();
+}
+					</code></pre>
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class SchedulingTask: SerialTask, ISchedulingTask {
+   override void run() { base.run(); }
+}
+					</code></pre>
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class FakeSchedulingTask: ISchedulingTask {
+   void run() { /* do some fake stuff */ }
+}
+					</code></pre>
+					<pre class="fragment"><code class="cs" data-trim contenteditable>
+class SchedulingTaskPane: SchedulerPane {
+   SchedulingTaskPane(ISchedulingTask task) { ... }
+}
+					</code></pre>
+				</section>
 		</div>
 	</div>
 
