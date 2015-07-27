@@ -719,7 +719,13 @@ body {
   top: 0;
   left: 0;
   -webkit-perspective: 600px;
-          perspective: 600px; }
+          perspective: 600px;
+          -webkit-filter: blur(5px);
+          -moz-filter: blur(50px);
+          -o-filter: blur(5px);
+          -ms-filter: blur(5px);
+          filter: blur(5px);          
+  }
 
 .reveal .slide-background {
   display: none;
