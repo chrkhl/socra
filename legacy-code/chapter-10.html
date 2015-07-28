@@ -113,9 +113,6 @@ class Image {
 							</div>
 						</li>
 					</ul>
-					<br /><br />
-					<h2 class="fragment">Merke:</h2>
-					<span class="fragment">Gutes Design ist testbar!</span>
 				</section>
 
 				<section data-background="#2980b9">
@@ -133,7 +130,7 @@ class Image {
 					<pre class="fragment"><code class="cs" data-trim contenteditable>
 // 2. Subclass erstellen
 class TestingImage: Image {
-   protected void setSnapRegion(int x, int y, int width, int height) {
+   public override void setSnapRegion(int x, int y, int width, int height) {
       base.setSnapRegion(x, y, width, height);
    }
 }
@@ -225,7 +222,7 @@ public class HttpPostedFileWrapper: IPostedFile {
 				<section data-background="#c0392b">
 					<small>Fall 2: Die &quot;hilfreiche&quot; Sprachfunktion</small>
 					<br />
-					Lösungsansatz: Test & Production
+					Lösungsansatz: Schritt 3 -> Test & Production
 					<pre class="fragment"><code class="cs" data-trim contenteditable>
 // Test-Implementation
 public class FakeHttpPostedFile: IHttpPostedFile {
